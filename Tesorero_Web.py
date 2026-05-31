@@ -4,7 +4,6 @@ from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from datetime import datetime
-import os
 import io
 import unicodedata
 import pandas as pd
@@ -12,34 +11,33 @@ import pandas as pd
 # ==========================================
 # 1. CONFIGURACIÓN DE IDENTIDAD (DINÁMICA)
 # ==========================================
-# Sacamos la identidad de la unidad de los secretos
 NOM_UNIDAD = st.secrets["config"].get("nombre_unidad", "Manada")
 
-NOM_UNIDAD = st.secrets["config"].get("nombre_unidad", "Manada")
-
-# Definimos los dos emojis
-# Emoji 1: El que tú escribes directo aquí (el "normal")
-EMOJI_NORMAL = "⚜️" # <--- Cambia este por el que quieras del teclado
-
-# Emoji 2: El que viene de los secretos (Base64)
+# Definición de Emojis
+EMOJI_NORMAL = "⚜️" 
 emoji_secret = st.secrets["config"].get("emoji", "")
 
-# Procesamos el emoji de los secretos
+# Procesamos el emoji original
 if emoji_secret.startswith("data:image"):
-    EMOJI_ORIGINAL = f"<img src='{emoji_secret}' width='26' style='vertical-align: middle;'>"
+    # Fíjate que cambié 'blob' por 'raw' y arreglé la estructura de la etiqueta <img>
+    url_imagen = "https://github.com/Gaspar-collab/tesoreria-manada/blob/main/lobatos.png"
+    EMOJI_ORIGINAL = f'<img src="{url_imagen}?raw=true" width="26" style="vertical-align: middle;">'
 else:
-    EMOJI_NORMAL = emoji_secret # Por si en los secretos pones un emoji normal también
+    EMOJI_ORIGINAL = emoji_secret 
 
-# Orden deseado: Emoji1 + Emoji2 + Título + Emoji2 + Emoji1
-# Nota: st.set_page_config no acepta HTML, así que le pasamos el emoji normal para la pestaña
-st.set_page_config(
-    page_title=f"{EMOJI_NORMAL} {EMOJI_ORIGINAL} Tesorería {NOM_UNIDAD} {EMOJI_ORIGINAL} {EMOJI_NORMAL}", 
-    layout="centered"
-)
+# Variables de orden para usar en el código
+# 1: Normal + Original
+EMOJIS_TITULO_DERECHA = f"{EMOJI_NORMAL} {EMOJI_ORIGINAL}"
+# 2: Original + Normal
+EMOJIS_TITULO_IZQUIERDA = f"{EMOJI_ORIGINAL} {EMOJI_NORMAL}"
 
-# Para el título visual (que sí permite HTML):
-titulo_html = f"## {EMOJI_NORMAL} {EMOJI_ORIGINAL} Tesorería de la {NOM_UNIDAD} {EMOJI_ORIGINAL} {EMOJI_NORMAL}"
-# 🎭 FILTRO DE TEXTO: ¿Niños o Jóvenes? Depende de la unidad
+# Configuración página
+st.set_page_config(page_title=f"Tesorería {NOM_UNIDAD}", layout="centered")
+
+# Título visual: Emoji1 + Emoji2 + Título + Emoji2 + Emoji1
+titulo_html = f"## {EMOJIS_TITULO_DERECHA} Tesorería de la {NOM_UNIDAD} {EMOJIS_TITULO_IZQUIERDA}"
+
+# 🎭 FILTRO DE TEXTO
 if NOM_UNIDAD.lower() == "manada":
     TEXTO_INDIVIDUAL = "niño"
     TEXTO_PLURAL = "niños"
@@ -47,12 +45,7 @@ else:
     TEXTO_INDIVIDUAL = "joven"
     TEXTO_PLURAL = "jóvenes"
 
-# 🚨 CONFIGURACIÓN DE PÁGINA AL INICIO 
-# Nota: page_icon no soporta HTML, por lo que le pasamos un emoji de respaldo si es Base64
-icono_pestana = "⚜️" if EMOJI_ORIGINAL.startswith("data:image") else EMOJI_ORIGINAL
-st.set_page_config(page_title=f"Tesorería {NOM_UNIDAD}", page_icon=icono_pestana, layout="centered")
-
-# Sacamos ambos IDs directamente de los secretos
+# Sacamos IDs de secretos
 SPREADSHEET_ID = st.secrets["config"]["spreadsheet_id"]
 CARPETA_COMPROBANTES_ID = st.secrets["config"]["carpeta_comprobantes_id"]
 
@@ -68,8 +61,7 @@ if "autenticado" not in st.session_state:
     st.session_state["autenticado"] = False
 
 if not st.session_state["autenticado"]:
-    # Usamos unsafe_allow_html aquí también por si el título lleva el emoji en Base64
-    st.markdown(f"## {EMOJI_UNIDAD} Acceso Restringido - Tesorería", unsafe_allow_html=True)
+    st.markdown(f"## {EMOJIS_TITULO_IZQUIERDA} Acceso Restringido - Tesorería", unsafe_allow_html=True)
     st.write(f"Ingresa la contraseña de la {NOM_UNIDAD} para registrar movimientos.")
 
     clave_maestra = st.secrets["credenciales"]["clave_compartida"]
@@ -86,15 +78,13 @@ if not st.session_state["autenticado"]:
     st.stop()
 
 # ==========================================
-# 2. AUTENTICACIÓN DE GOOGLE 
+# 2. AUTENTICACIÓN DE GOOGLE Y FUNCIONES
 # ==========================================
 def autenticar():
     from google.oauth2.credentials import Credentials as OAuthCredentials
-    
     creds = OAuthCredentials.from_authorized_user_info(st.secrets["token_json"], scopes=SCOPES)
     cliente_sheets = gspread.authorize(creds)
     servicio_drive = build('drive', 'v3', credentials=creds)
-    
     return cliente_sheets, servicio_drive
 
 def quitar_tildes(texto):
@@ -120,7 +110,6 @@ def obtener_datos_busqueda():
     sheet = cliente_sheets.open_by_key(SPREADSHEET_ID)
     meses_map = ['Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
     data_total = []
-    
     for mes in meses_map:
         try:
             hoja = sheet.worksheet(mes)
@@ -135,9 +124,7 @@ def obtener_datos_busqueda():
 # ==========================================
 # 3. CREACIÓN DE PESTAÑAS (TABS)
 # ==========================================
-# Renderizamos el título principal admitiendo HTML para el emoji personalizado
-st.markdown(f"# {EMOJI_UNIDAD} Tesorería de la {NOM_UNIDAD}", unsafe_allow_html=True)
-
+st.markdown(titulo_html, unsafe_allow_html=True)
 tab1, tab2 = st.tabs(["📝 Registrar Transacción", "📊 Estadísticas y Buscador"])
 
 # ==========================================
