@@ -16,7 +16,7 @@ import pandas as pd
 NOM_UNIDAD = st.secrets["config"].get("nombre_unidad", "Manada")
 
 # 🐾 PROCESAMIENTO DEL EMOJI: Soporta Emojis de texto y Base64 personalizado
-emoji_raw = st.secrets["config"].get("emoji", "🔥")
+emoji_raw = st.secrets["config"].get("emoji", "⚜️")
 
 if emoji_raw.startswith("data:image"):
     EMOJI_UNIDAD = f"<img src='{emoji_raw}' width='26' style='vertical-align: middle; margin-right: 6px;'>"
