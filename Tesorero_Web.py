@@ -309,9 +309,20 @@ with tab1:
         key=f"comprobantes_{st.session_state.form_id}"
     )
 
+    if archivos_comprobantes:
+        st.write("👀 **Previsualización de comprobantes:**")
+        cols = st.columns(min(len(archivos_comprobantes), 3)) # Muestra hasta 3 en fila
+        for i, archivo in enumerate(archivos_comprobantes):
+            with cols[i % 3]:
+                if archivo.type.startswith("image"):
+                    st.image(archivo, use_container_width=True)
+                else:
+                    st.info(f"📄 {archivo.name[:15]}...")
     st.write("---")
     if st.button("🚀 REGISTRAR TRANSACCIÓN", use_container_width=True):
-        if es_pago_lobato and nombre_final == "-- Selecciona una opción --":
+        if not archivos_comprobantes:
+            st.error("❌ ¡Paren las prensas! Debes adjuntar al menos un comprobante para registrar la transacción.")
+        elif es_pago_lobato and nombre_final == "-- Selecciona una opción --":
             st.error(f"❌ Por favor, selecciona un {TEXTO_INDIVIDUAL} válido de la lista.")
         elif es_pago_lobato and tipo_transaccion in ["Inscripción", "Cuota e Inscripción"] and ya_pago_inscripcion:
             st.error(f"❌ Operación rechazada: La inscripción de este {TEXTO_INDIVIDUAL} ya figura como pagada.")
