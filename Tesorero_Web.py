@@ -15,14 +15,30 @@ import pandas as pd
 # Sacamos la identidad de la unidad de los secretos
 NOM_UNIDAD = st.secrets["config"].get("nombre_unidad", "Manada")
 
-# 🐾 PROCESAMIENTO DEL EMOJI: Soporta Emojis de texto y Base64 personalizado
-emoji_raw = st.secrets["config"].get("emoji", "⚜️")
+NOM_UNIDAD = st.secrets["config"].get("nombre_unidad", "Manada")
 
-if emoji_raw.startswith("data:image"):
-    EMOJI_UNIDAD = f"<img src='{emoji_raw}' width='26' style='vertical-align: middle; margin-right: 6px;'>"
+# Definimos los dos emojis
+# Emoji 1: El que tú escribes directo aquí (el "normal")
+EMOJI_NORMAL = "⚜️" # <--- Cambia este por el que quieras del teclado
+
+# Emoji 2: El que viene de los secretos (Base64)
+emoji_secret = st.secrets["config"].get("emoji", "")
+
+# Procesamos el emoji de los secretos
+if emoji_secret.startswith("data:image"):
+    EMOJI_ORIGINAL = f"<img src='{emoji_secret}' width='26' style='vertical-align: middle;'>"
 else:
-    EMOJI_UNIDAD = emoji_raw
+    EMOJI_NORMAL = emoji_secret # Por si en los secretos pones un emoji normal también
 
+# Orden deseado: Emoji1 + Emoji2 + Título + Emoji2 + Emoji1
+# Nota: st.set_page_config no acepta HTML, así que le pasamos el emoji normal para la pestaña
+st.set_page_config(
+    page_title=f"{EMOJI_NORMAL} {EMOJI_ORIGINAL} Tesorería {NOM_UNIDAD} {EMOJI_ORIGINAL} {EMOJI_NORMAL}", 
+    layout="centered"
+)
+
+# Para el título visual (que sí permite HTML):
+titulo_html = f"## {EMOJI_NORMAL} {EMOJI_ORIGINAL} Tesorería de la {NOM_UNIDAD} {EMOJI_ORIGINAL} {EMOJI_NORMAL}"
 # 🎭 FILTRO DE TEXTO: ¿Niños o Jóvenes? Depende de la unidad
 if NOM_UNIDAD.lower() == "manada":
     TEXTO_INDIVIDUAL = "niño"
@@ -33,7 +49,7 @@ else:
 
 # 🚨 CONFIGURACIÓN DE PÁGINA AL INICIO 
 # Nota: page_icon no soporta HTML, por lo que le pasamos un emoji de respaldo si es Base64
-icono_pestana = "🔥" if emoji_raw.startswith("data:image") else emoji_raw
+icono_pestana = "⚜️" if EMOJI_ORIGINAL.startswith("data:image") else EMOJI_ORIGINAL
 st.set_page_config(page_title=f"Tesorería {NOM_UNIDAD}", page_icon=icono_pestana, layout="centered")
 
 # Sacamos ambos IDs directamente de los secretos
